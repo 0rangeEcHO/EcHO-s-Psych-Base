@@ -14,6 +14,8 @@ class MusicBeatState extends FlxState
 	private var curDecStep:Float = 0;
 	private var curDecBeat:Float = 0;
 	public var controls(get, never):Controls;
+	public static var citrus:Bool = true;
+
 	private function get_controls()
 	{
 		return Controls.instance;
@@ -145,6 +147,8 @@ class MusicBeatState extends FlxState
 	}
 
 	public static function resetState() {
+		CitrusUtil.spriteList = [];
+		CitrusUtil.textList = [];
 		if(FlxTransitionableState.skipNextTransIn) FlxG.resetState();
 		else startTransition();
 		FlxTransitionableState.skipNextTransIn = false;

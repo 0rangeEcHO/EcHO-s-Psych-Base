@@ -34,6 +34,11 @@ import backend.Difficulty;
 import backend.Mods;
 import backend.Language;
 
+//customstuff
+import backend.SpriteFromSheet;
+import backend.FunkinSprite;
+import backend.CitrusUtil;
+
 import backend.ui.*; //Psych-UI
 
 import objects.Alphabet;

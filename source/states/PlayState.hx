@@ -376,19 +376,8 @@ class PlayState extends MusicBeatState
 		dadGroup = new FlxSpriteGroup(DAD_X, DAD_Y);
 		gfGroup = new FlxSpriteGroup(GF_X, GF_Y);
 
-		switch (curStage)
-		{
-			case 'stage': new StageWeek1(); 			//Week 1
-			case 'spooky': new Spooky();				//Week 2
-			case 'philly': new Philly();				//Week 3
-			case 'limo': new Limo();					//Week 4
-			case 'mall': new Mall();					//Week 5 - Cocoa, Eggnog
-			case 'mallEvil': new MallEvil();			//Week 5 - Winter Horrorland
-			case 'school': new School();				//Week 6 - Senpai, Roses
-			case 'schoolEvil': new SchoolEvil();		//Week 6 - Thorns
-			case 'tank': new Tank();					//Week 7 - Ugh, Guns, Stress
-			case 'phillyStreets': new PhillyStreets(); 	//Weekend 1 - Darnell, Lit Up, 2Hot
-			case 'phillyBlazin': new PhillyBlazin();	//Weekend 1 - Blazin
+		switch (curStage) {
+			//case 'stage': new StageWeek1();
 		}
 		if(isPixelStage) introSoundsSuffix = '-pixel';
 
@@ -565,7 +554,7 @@ class PlayState extends MusicBeatState
 
 		uiGroup.cameras = [camHUD];
 		noteGroup.cameras = [camHUD];
-		comboGroup.cameras = [camHUD];
+		comboGroup.cameras = [camGame];
 
 		startingSong = true;
 
@@ -1143,18 +1132,13 @@ class PlayState extends MusicBeatState
 		callOnScripts('onUpdateScore', [miss]);
 	}
 
-	public dynamic function updateScoreText()
-	{
-		var str:String = Language.getPhrase('rating_$ratingName', ratingName);
-		if(totalPlayed != 0)
-		{
-			var percent:Float = CoolUtil.floorDecimal(ratingPercent * 100, 2);
-			str += ' (${percent}%) - ' + Language.getPhrase(ratingFC);
-		}
-
+	public dynamic function updateScoreText() {
 		var tempScore:String;
-		if(!instakillOnMiss) tempScore = Language.getPhrase('score_text', 'Score: {1} | Misses: {2} | Rating: {3}', [songScore, songMisses, str]);
-		else tempScore = Language.getPhrase('score_text_instakill', 'Score: {1} | Rating: {2}', [songScore, str]);
+		var fuckHead:String = 'Combo: $combo';
+		if(songMisses == 0)
+			fuckHead = ratingFC;
+		if(!instakillOnMiss) tempScore = 'Score: $songScore | Misses: $songMisses | $fuckHead';
+		else tempScore = 'Score: $songScore | $fuckHead';
 		scoreTxt.text = tempScore;
 	}
 
@@ -1170,7 +1154,7 @@ class PlayState extends MusicBeatState
 		{
 			if (bads > 0 || shits > 0) ratingFC = 'FC';
 			else if (goods > 0) ratingFC = 'GFC';
-			else if (sicks > 0) ratingFC = 'SFC';
+			else if (sicks > 0) ratingFC = 'PFC';
 		}
 		else {
 			if (songMisses < 10) ratingFC = 'SDCB';
@@ -1692,6 +1676,8 @@ class PlayState extends MusicBeatState
 		setOnScripts('curDecStep', curDecStep);
 		setOnScripts('curDecBeat', curDecBeat);
 
+		if(!isCameraOnForcedPos) moveCameraSection();
+
 		if(botplayTxt != null && botplayTxt.visible) {
 			botplaySine += 180 * elapsed;
 			botplayTxt.alpha = 1 - Math.sin((Math.PI * botplaySine) / 180);
@@ -2065,6 +2051,10 @@ class PlayState extends MusicBeatState
 		if(Math.isNaN(flValue2)) flValue2 = null;
 
 		switch(eventName) {
+			case 'Beat Hit Set':
+				beatsPerZoom = Std.int(flValue1) ?? 4;
+			case 'Cam Move Toggle':
+				camFollowCharMovement = Std.int(flValue1) ?? 1;
 			case 'Hey!':
 				var value:Int = 2;
 				switch(value1.toLowerCase().trim()) {
@@ -2334,33 +2324,28 @@ class PlayState extends MusicBeatState
 	}
 
 	var cameraTwn:FlxTween;
+	public static var camFollowCharMovement:Int = 1;
+	public static var camOffset:Int = 20;
+	public var forcedCharFocus = null;
 	public function moveCamera(isDad:Bool)
 	{
-		if(isDad)
-		{
-			if(dad == null) return;
-			camFollow.setPosition(dad.getMidpoint().x + 150, dad.getMidpoint().y - 100);
-			camFollow.x += dad.cameraPosition[0] + opponentCameraOffset[0];
-			camFollow.y += dad.cameraPosition[1] + opponentCameraOffset[1];
-			tweenCamIn();
-		}
-		else
-		{
-			if(boyfriend == null) return;
-			camFollow.setPosition(boyfriend.getMidpoint().x - 100, boyfriend.getMidpoint().y - 100);
-			camFollow.x -= boyfriend.cameraPosition[0] - boyfriendCameraOffset[0];
-			camFollow.y += boyfriend.cameraPosition[1] + boyfriendCameraOffset[1];
+		final char:Character = forcedCharFocus ?? (isDad ? dad : boyfriend);
+		final position:FlxPoint = getCharOffset(char).addPoint(getCharBasePos(char));
 
-			if (songName == 'tutorial' && cameraTwn == null && FlxG.camera.zoom != 1)
-			{
-				cameraTwn = FlxTween.tween(FlxG.camera, {zoom: 1}, (Conductor.stepCrochet * 4 / 1000), {ease: FlxEase.elasticInOut, onComplete:
-					function (twn:FlxTween)
-					{
-						cameraTwn = null;
-					}
-				});
+		if(forcedCharFocus == null) {
+			final camOffsets = isDad ? opponentCameraOffset : boyfriendCameraOffset;
+			position.x += camOffsets[0];
+			position.y += camOffsets[1];
+		} else {
+			final camOffsets:Null<Array<Float>> = forcedCharFocus == dad ? opponentCameraOffset : boyfriendCameraOffset;
+			if(camOffsets != null) {
+				position.x += camOffsets[0];
+				position.y += camOffsets[1];
 			}
 		}
+
+		camFollow.setPosition(position.x, position.y);
+		position.putWeak();
 	}
 
 	public function tweenCamIn() {
@@ -2596,16 +2581,15 @@ class PlayState extends MusicBeatState
 		}
 
 		rating.loadGraphic(Paths.image(uiFolder + daRating.image + uiPostfix));
-		rating.screenCenter();
-		rating.x = placement - 40;
-		rating.y -= 60;
+		rating.visible = (!ClientPrefs.data.hideHud && showRating);
+		rating.x = boyfriend.getMidpoint().x - 270;
+		rating.y = boyfriend.getMidpoint().y - 390;
 		rating.acceleration.y = 550 * playbackRate * playbackRate;
 		rating.velocity.y -= FlxG.random.int(140, 175) * playbackRate;
 		rating.velocity.x -= FlxG.random.int(0, 10) * playbackRate;
 		rating.visible = (!ClientPrefs.data.hideHud && showRating);
-		rating.x += ClientPrefs.data.comboOffset[0];
-		rating.y -= ClientPrefs.data.comboOffset[1];
 		rating.antialiasing = antialias;
+		rating.scale.set(0.85, 0.85);
 
 		var comboSpr:FlxSprite = new FlxSprite().loadGraphic(Paths.image(uiFolder + 'combo' + uiPostfix));
 		comboSpr.screenCenter();
@@ -2634,45 +2618,14 @@ class PlayState extends MusicBeatState
 		comboSpr.updateHitbox();
 		rating.updateHitbox();
 
-		var daLoop:Int = 0;
-		var xThing:Float = 0;
 		if (showCombo)
 			comboGroup.add(comboSpr);
 
 		var separatedScore:String = Std.string(combo).lpad('0', 3);
-		for (i in 0...separatedScore.length)
-		{
+		for (i in 0...separatedScore.length) {
 			var numScore:FlxSprite = new FlxSprite().loadGraphic(Paths.image(uiFolder + 'num' + Std.parseInt(separatedScore.charAt(i)) + uiPostfix));
 			numScore.screenCenter();
-			numScore.x = placement + (43 * daLoop) - 90 + ClientPrefs.data.comboOffset[2];
-			numScore.y += 80 - ClientPrefs.data.comboOffset[3];
-
-			if (!PlayState.isPixelStage) numScore.setGraphicSize(Std.int(numScore.width * 0.5));
-			else numScore.setGraphicSize(Std.int(numScore.width * daPixelZoom));
-			numScore.updateHitbox();
-
-			numScore.acceleration.y = FlxG.random.int(200, 300) * playbackRate * playbackRate;
-			numScore.velocity.y -= FlxG.random.int(140, 160) * playbackRate;
-			numScore.velocity.x = FlxG.random.float(-5, 5) * playbackRate;
-			numScore.visible = !ClientPrefs.data.hideHud;
-			numScore.antialiasing = antialias;
-
-			//if (combo >= 10 || combo == 0)
-			if(showComboNum)
-				comboGroup.add(numScore);
-
-			FlxTween.tween(numScore, {alpha: 0}, 0.2 / playbackRate, {
-				onComplete: function(tween:FlxTween)
-				{
-					numScore.destroy();
-				},
-				startDelay: Conductor.crochet * 0.002 / playbackRate
-			});
-
-			daLoop++;
-			if(numScore.x > xThing) xThing = numScore.x;
 		}
-		comboSpr.x = xThing + 50;
 		FlxTween.tween(rating, {alpha: 0}, 0.2 / playbackRate, {
 			startDelay: Conductor.crochet * 0.001 / playbackRate
 		});
@@ -3210,6 +3163,7 @@ class PlayState extends MusicBeatState
 		callOnScripts('onStepHit');
 	}
 
+	public var beatsPerZoom:Int;
 	var lastBeatHit:Int = -1;
 
 	override function beatHit()
@@ -3217,6 +3171,13 @@ class PlayState extends MusicBeatState
 		if(lastBeatHit >= curBeat) {
 			//trace('BEAT HIT: ' + curBeat + ', LAST HIT: ' + lastBeatHit);
 			return;
+		}
+
+		if (beatsPerZoom == 0) beatsPerZoom = 4;
+		if (camZooming && curBeat % beatsPerZoom == 0 && ClientPrefs.data.camZooms)
+		{
+			FlxG.camera.zoom += 0.015 * camZoomingMult;
+			camHUD.zoom += 0.03 * camZoomingMult;
 		}
 
 		if (generatedMusic)
@@ -3260,12 +3221,6 @@ class PlayState extends MusicBeatState
 		{
 			if (generatedMusic && !endingSong && !isCameraOnForcedPos)
 				moveCameraSection();
-
-			if (camZooming && FlxG.camera.zoom < 1.35 && ClientPrefs.data.camZooms)
-			{
-				FlxG.camera.zoom += 0.015 * camZoomingMult;
-				camHUD.zoom += 0.03 * camZoomingMult;
-			}
 
 			if (SONG.notes[curSection].changeBPM)
 			{
@@ -3641,5 +3596,48 @@ class PlayState extends MusicBeatState
 		FlxG.log.warn('This platform doesn\'t support Runtime Shaders!');
 		#end
 		return false;
+	}
+
+	/**
+		* Returns the characters animations displacement for camFollow
+		* @param char
+		* @return FlxPoint
+	*/
+
+	inline public function getCharOffset(char:Character):FlxPoint {
+		if(camFollowCharMovement != 1 || isCameraOnForcedPos || char == null || char.isAnimationNull()) return FlxPoint.weak();
+
+		return switch(char.getAnimationName().substr(4).split('-')[0].toLowerCase()) {
+			case 'up': FlxPoint.weak(0, -camOffset);
+			case 'down': FlxPoint.weak(0, camOffset);
+			case 'left': FlxPoint.weak(-camOffset, 0);
+			case 'right': FlxPoint.weak(camOffset, 0);
+			case _: FlxPoint.weak();
+		}
+	}
+
+	/**
+	* Gets the base position of a character with their camera position
+	* @param char
+	* @return FlxPoint
+	*/
+
+	public function getCharBasePos(char:Character):FlxPoint {
+		if(char == null) return FlxPoint.weak();
+
+		final ret = char.getMidpoint(FlxPoint.weak());
+
+		if(char == gf) {
+			ret.x += char.cameraPosition[0];
+			ret.y += char.cameraPosition[1];
+		} else if(char.isPlayer) {
+			ret.x -= 100 + char.cameraPosition[0];
+			ret.y += -100 + char.cameraPosition[1];
+		} else {
+			ret.x += 150 + char.cameraPosition[0];
+			ret.y += -100 + char.cameraPosition[1];
+		}
+
+		return ret;
 	}
 }
