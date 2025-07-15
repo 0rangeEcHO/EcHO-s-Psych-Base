@@ -1,7 +1,22 @@
 package backend;
 
+import flixel.system.FlxAssets.FlxShader;
+import flixel.math.FlxPoint;
+import flixel.FlxG;
 import openfl.utils.Assets;
 import lime.utils.Assets as LimeAssets;
+import lime.utils.AssetLibrary;
+import lime.utils.AssetManifest;
+import flixel.system.FlxSound;
+import meta.states.*;
+#if sys
+import sys.io.File;
+import sys.FileSystem;
+#else
+import openfl.utils.Assets;
+#end
+
+using StringTools;
 
 class CoolUtil
 {
@@ -179,5 +194,52 @@ class CoolUtil
 			default:
 				text.borderStyle = NONE;
 		}
+	}
+
+	//hate that im using dynamic but blablabla shader effects garbade
+	public static function addShaderToCamera(shader:Dynamic,?camera:flixel.FlxCamera) 
+	{
+		var shad:openfl.filters.ShaderFilter = null;
+		if (shader is FlxShader) shad = new openfl.filters.ShaderFilter(shader);
+		else {
+			//this sucks shader effects are genuinely a stupid setup stop using them
+			var shaderToApply:shaders.Shaders.ShaderEffect = shader;
+			shad = new openfl.filters.ShaderFilter(shaderToApply.shader);
+		}
+		if (camera == null) camera = FlxG.cameras.list[0];
+		@:privateAccess {
+			if (camera._filters == null) camera._filters = [];
+			camera._filters.push(shad);
+		}
+	}
+
+	public static function removeShaderFromCamera(shader:Dynamic,?camera:flixel.FlxCamera) 
+	{
+
+		var shaderToRemove:Dynamic = shader;
+		if (!(shader is FlxShader)) shaderToRemove = shaderToRemove.shader;
+		if (camera == null) camera = FlxG.cameras.list[0];
+		@:privateAccess {
+			if (camera._filters == null) return;
+			for (i in camera._filters) {
+				if (i is openfl.filters.ShaderFilter) {
+					var filter = cast(i,openfl.filters.ShaderFilter);
+					if (filter.shader == shaderToRemove) camera._filters.remove(i); break;
+					
+				}
+			}
+		}
+	}
+
+	public static function clearShadersFromCamera(?camera:flixel.FlxCamera) {
+		if (camera == null) camera = FlxG.cameras.list[0];
+		@:privateAccess {
+			if (camera._filters == null) return;
+			while (camera._filters.length > 0) camera._filters.pop();
+		}
+	}
+
+	public static function betterLerp(value:Float,desiredValue:Float,ratio:Float) {
+		return FlxMath.lerp(value,desiredValue,FlxMath.bound(ratio * 60 * FlxG.elapsed, 0, 1));
 	}
 }

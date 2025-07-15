@@ -5,11 +5,70 @@ import flixel.effects.FlxFlicker;
 import lime.app.Application;
 import states.editors.MasterEditorMenu;
 import options.OptionsState;
+import flixel.addons.display.FlxBackdrop;
+import states.aechos.TitleState;
 
 enum MainMenuColumn {
 	LEFT;
 	CENTER;
 	RIGHT;
+}
+
+class CodeBG extends FlxSpriteGroup {
+
+	var backdrops:Array<FlxBackdrop> = [];
+
+	public var speed:Float = 100;
+	public function new(x:Float = 0,y:Float = 0,_width:Float = 1280,_height:Float = 720) {
+		super(x,y);
+
+		final tSize:Int = 24;
+		final tWidth:Int = Std.int(tSize * 0.75);
+
+		trace('length ' + Std.int(_width/tWidth));
+
+		for (i in 0...Std.int(_width/tWidth)) {
+
+
+			var t = new FlxText(0,0,0,FlxG.random.bool(50) ? '0' : '1',tSize);
+			t.font = Paths.font('vcr.ttf');
+			t.color = FlxColor.LIME;
+	
+			for (i in 0...3) {
+				t.text += FlxG.random.bool(50) ? '\n0' : '\n1';
+			}
+			@:privateAccess t.regenGraphic();
+
+			// var bgGraphic = t.graphic.bitmap.clone();
+			// t.destroy();
+			//flxtiled sprite doesnt work well for this sadly
+			var s = new FlxBackdrop(t.graphic,Y);
+			s.x += t.width * i;
+			//trace(s.x + ' LOL: ' + i);
+			add(s);
+			backdrops.push(s);
+			if (i % 2 ==0) s.velocity.y = speed;
+			else s.velocity.y = -speed;
+		}
+
+		var grad = flixel.util.FlxGradient.createGradientFlxSprite(1, Std.int(_height), ([0x0,FlxColor.BLACK]));
+		grad.scale.x = _width;
+		grad.updateHitbox();
+		add(grad);
+
+	}
+
+	override function update(elapsed:Float) {
+		super.update(elapsed);
+
+		// for (k=>i in backdrops) {
+		// 	if (!i.active) continue;
+		// 	if (k % 2 == 0) i.scrollY += speed * elapsed;
+		// 	else i.scrollY -= speed * elapsed;
+		// }
+
+	}
+
 }
 
 class MainMenuState extends MusicBeatState
@@ -146,7 +205,7 @@ class MainMenuState extends MusicBeatState
 	var timeNotMoving:Float = 0;
 	override function update(elapsed:Float)
 	{
-		if (FlxG.sound.music.volume < 0.8)
+		if (FlxG.sound.music != null && FlxG.sound.music.volume < 0.8)
 			FlxG.sound.music.volume = Math.min(FlxG.sound.music.volume + 0.5 * elapsed, 0.8);
 
 		if (!selectedSomethin)
@@ -260,6 +319,7 @@ class MainMenuState extends MusicBeatState
 				selectedSomethin = true;
 				FlxG.mouse.visible = false;
 				FlxG.sound.play(Paths.sound('cancelMenu'));
+				TitleState.left = false;
 				MusicBeatState.switchState(new TitleState());
 			}
 

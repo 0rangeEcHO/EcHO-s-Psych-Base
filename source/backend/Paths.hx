@@ -193,11 +193,41 @@ class Paths
 	inline static public function shaderVertex(key:String, ?folder:String)
 		return getPath('shaders/$key.vert', TEXT, folder, true);
 
+	inline static public function modsShaderFragment(key:String, ?library:String)
+		return modFolders('shaders/'+key+'.frag');
+	
+	inline static public function modsShaderVertex(key:String, ?library:String)
+		return modFolders('shaders/'+key+'.vert');
+
 	inline static public function lua(key:String, ?folder:String)
 		return getPath('$key.lua', TEXT, folder, true);
 
-	static public function video(key:String)
-	{
+	inline static public function exists(asset:String, ?type:lime.utils.AssetType) {
+		#if sys 
+		if (FileSystem.exists(asset)) {
+			return true;
+		}
+		#end
+		if (Assets.exists(asset, type)) {
+			return true;
+		}
+
+		return false;
+		
+	}
+	inline static public function getContent(asset:String):Null<String> {
+		#if sys
+		if (FileSystem.exists(asset))
+			return File.getContent(asset);
+		#end
+		if (Assets.exists(asset))
+			return Assets.getText(asset);
+		
+
+		return null;
+	}
+
+	static public function video(key:String) {
 		#if MODS_ALLOWED
 		var file:String = modsVideo(key);
 		if(FileSystem.exists(file)) return file;

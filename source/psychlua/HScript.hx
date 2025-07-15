@@ -4,6 +4,10 @@ import flixel.FlxBasic;
 import objects.Character;
 import psychlua.LuaUtils;
 import psychlua.CustomSubstate;
+import states.MainMenuState.CodeBG;
+import openfl.display.BlendMode;
+import backend.SpriteFromSheet;
+import flixel.addons.display.FlxRuntimeShader;
 
 #if LUA_ALLOWED
 import psychlua.FunkinLua;
@@ -163,6 +167,8 @@ class HScript extends Iris
 		set('Paths', Paths);
 		set('Conductor', Conductor);
 		set('ClientPrefs', ClientPrefs);
+		set("ObjectTools", FlxObjectTools);
+
 		#if ACHIEVEMENTS_ALLOWED
 		set('Achievements', Achievements);
 		#end
@@ -171,7 +177,6 @@ class HScript extends Iris
 		set('Note', objects.Note);
 		set('CustomSubstate', CustomSubstate);
 		#if (!flash && sys)
-		set('FlxRuntimeShader', flixel.addons.display.FlxRuntimeShader);
 		set('ErrorHandledRuntimeShader', shaders.ErrorHandledShader.ErrorHandledRuntimeShader);
 		#end
 		set('ShaderFilter', openfl.filters.ShaderFilter);
@@ -180,7 +185,18 @@ class HScript extends Iris
 		set('FlxAnimate', FlxAnimate);
 		#end
 
+		#if VIDEOS_ALLOWED
+		set('FlxVideo',FlxVideo);
+		set('FlxVideoSprite',FlxVideoSprite);
+		#end
+
+		set('CodeBG',CodeBG);
+
 		// Functions & Variables
+		set('addShader',function(shader,?camera){ApplyShaderToCamera(shader,camera);});
+		set('removeShader',function(shader,?camera){RemoveShaderFromCamera(shader,camera);});
+		set('clearShader',function(?camera){ClearShadersFromCamera(camera);});
+
 		set('setVar', function(name:String, value:Dynamic) {
 			MusicBeatState.getVariables().set(name, value);
 			return value;
@@ -214,6 +230,22 @@ class HScript extends Iris
 				modName = this.modFolder;
 			}
 			return LuaUtils.getModSetting(saveTag, modName);
+		});
+
+		set("FlxRuntimeShader", FlxRuntimeShader);
+		set("newShader", function(fragFile:String = null, vertFile:String = null){ // returns a FlxRuntimeShader but with file names lol
+			var runtime:FlxRuntimeShader = null;
+
+			try{				
+				runtime = new FlxRuntimeShader(
+					fragFile==null ? null : Paths.getContent(Paths.exists(Paths.modsShaderFragment(fragFile)) ? Paths.modsShaderFragment(fragFile) : Paths.shaderFragment(fragFile)), 
+					vertFile==null ? null : Paths.getContent(Paths.exists(Paths.modsShaderVertex(vertFile)) ? Paths.modsShaderVertex(vertFile) : Paths.shaderVertex(vertFile))
+				);
+			}catch(e:Dynamic){
+				trace("Shader compilation error:" + e.message);
+			}
+
+			return runtime==null ? new FlxRuntimeShader() : runtime;
 		});
 
 		// Keyboard & Gamepads

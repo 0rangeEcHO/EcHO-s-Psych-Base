@@ -1,11 +1,11 @@
 package substates;
 
+
+
+import states.aechos.TitleState;
 import flixel.tweens.FlxTween;
 import flixel.tweens.FlxEase;
-
 import states.MainMenuState;
-import states.TitleState;
-
 class OutdatedSubState extends MusicBeatSubstate
 {
 	public static var updateVersion:String = CoolUtil.checkForUpdates();

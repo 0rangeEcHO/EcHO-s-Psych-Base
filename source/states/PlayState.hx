@@ -266,6 +266,10 @@ class PlayState extends MusicBeatState
 
 	private static var _lastLoadedModDirectory:String = '';
 	public static var nextReloadAll:Bool = false;
+
+	// Shaders
+	public var shaderUpdates:Array<Float->Void> = [];
+
 	override public function create()
 	{
 		//trace('Playback Rate: ' + playbackRate);
@@ -1853,6 +1857,9 @@ class PlayState extends MusicBeatState
 
 		setOnScripts('botPlay', cpuControlled);
 		callOnScripts('onUpdatePost', [elapsed]);
+		for (i in shaderUpdates) {
+			i(elapsed);
+		}
 	}
 
 	// Health icon updaters
@@ -2088,7 +2095,7 @@ class PlayState extends MusicBeatState
 				gfSpeed = Math.round(flValue1);
 
 			case 'Add Camera Zoom':
-				if(ClientPrefs.data.camZooms && FlxG.camera.zoom < 1.35) {
+				if(ClientPrefs.data.camZooms) {
 					if(flValue1 == null) flValue1 = 0.015;
 					if(flValue2 == null) flValue2 = 0.03;
 
@@ -2560,7 +2567,7 @@ class PlayState extends MusicBeatState
 		score = daRating.score;
 
 		if(daRating.noteSplash && !note.noteSplashData.disabled)
-			spawnNoteSplashOnNote(note);
+			spawnNoteSplashOnNote(note, false);
 
 		if(!cpuControlled) {
 			songScore += score;
@@ -2971,6 +2978,7 @@ class PlayState extends MusicBeatState
 		if(result != LuaUtils.Function_Stop && result != LuaUtils.Function_StopHScript && result != LuaUtils.Function_StopAll) callOnHScript('opponentNoteHit', [note]);
 
 		if (!note.isSustainNote) invalidateNote(note);
+		if(!note.noteSplashData.disabled && !note.isSustainNote) spawnNoteSplashOnNote(note, true);
 	}
 
 	public function goodNoteHit(note:Note):Void
@@ -3066,7 +3074,7 @@ class PlayState extends MusicBeatState
 			}
 
 			noteMiss(note);
-			if(!note.noteSplashData.disabled && !note.isSustainNote) spawnNoteSplashOnNote(note);
+			if(!note.noteSplashData.disabled && !note.isSustainNote) spawnNoteSplashOnNote(note, false);
 		}
 
 		stagesFunc(function(stage:BaseStage) stage.goodNoteHit(note));
@@ -3081,11 +3089,17 @@ class PlayState extends MusicBeatState
 		note.destroy();
 	}
 
-	public function spawnNoteSplashOnNote(note:Note) {
+	public function spawnNoteSplashOnNote(note:Note, isOpp:Bool) {
 		if(note != null) {
-			var strum:StrumNote = playerStrums.members[note.noteData];
-			if(strum != null)
-				spawnNoteSplash(strum.x, strum.y, note.noteData, note, strum);
+			if(!isOpp) {
+				var strum:StrumNote = playerStrums.members[note.noteData];
+				if(strum != null)
+					spawnNoteSplash(strum.x, strum.y, note.noteData, note, strum);
+			} else {
+				var strumOpp:StrumNote = opponentStrums.members[note.noteData];
+				if(strumOpp != null)
+					spawnNoteSplash(strumOpp.x, strumOpp.y, note.noteData, note, strumOpp);
+			}
 		}
 	}
 

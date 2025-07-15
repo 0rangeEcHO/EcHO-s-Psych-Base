@@ -1,5 +1,6 @@
 package backend;
 
+import backend.MusicBeatState;
 import flixel.FlxObject;
 import flixel.FlxBasic;
 
@@ -36,7 +37,7 @@ class CitrusUtil extends FlxBasic {
     override public function update(elapsed:Float) {
 		super.update(elapsed);
 
-        if (spriteList.length == 0 && textList.length == 0) return;
+        if (spriteList.length == 0 && textList.length == 0 || !MusicBeatState.citrus) return;
 
         if(spriteList.length != 0) {
             if(spriteSelected) {
@@ -72,7 +73,7 @@ class CitrusUtil extends FlxBasic {
             }
         }
 
-        if(spriteSelected) {
+        if(spriteSelected && spriteList.length != 0) {
             if (FlxG.keys.justPressed.LEFT) spriteList[oneSelected].x += FlxG.keys.pressed.SHIFT ? -10 : -1;
             if (FlxG.keys.justPressed.RIGHT) spriteList[oneSelected].x += FlxG.keys.pressed.SHIFT ? 10 : 1;
             if (FlxG.keys.justPressed.UP) spriteList[oneSelected].y += FlxG.keys.pressed.SHIFT ? -10 : -1;
@@ -87,7 +88,7 @@ class CitrusUtil extends FlxBasic {
                 spriteList[oneSelected].scale.x -= FlxG.keys.pressed.SHIFT ? 0.2 : 0.05;
                 spriteList[oneSelected].updateHitbox();
             }
-        } else {
+        } else if(textList.length != 0) {
             if (FlxG.keys.justPressed.LEFT) textList[oneSelected].x += FlxG.keys.pressed.SHIFT ? -10 : -1;
             if (FlxG.keys.justPressed.RIGHT) textList[oneSelected].x += FlxG.keys.pressed.SHIFT ? 10 : 1;
             if (FlxG.keys.justPressed.UP) textList[oneSelected].y += FlxG.keys.pressed.SHIFT ? -10 : -1;
@@ -97,10 +98,18 @@ class CitrusUtil extends FlxBasic {
         }
 
         if (FlxG.keys.justPressed.ALT) {
-            if(spriteSelected) {
-                trace('Sprite $oneSelected' + ' X: ' + spriteList[oneSelected].x + ' | Sprite $oneSelected' + ' Y: ' + spriteList[oneSelected].y + ' | Sprite $oneSelected Scale: ' + spriteList[oneSelected].scale.x);
-            } else {
-                trace('Text $oneSelected' + ' X: ' + textList[oneSelected].x + ' | Text $oneSelected' + ' Y: ' + textList[oneSelected].y + ' | Text $oneSelected Scale: ' + textList[oneSelected].size);
+            if(spriteSelected && spriteList.length != 0) {
+                try {
+                    trace('Sprite $oneSelected' + ' X: ' + spriteList[oneSelected].x + ' | Sprite $oneSelected' + ' Y: ' + spriteList[oneSelected].y + ' | Sprite $oneSelected Scale: ' + spriteList[oneSelected].scale.x);
+                } catch(e:Dynamic) {
+                    trace(e + " (Tried to trace sprite that doesn't exist!");
+                }
+            } else if(textList.length != 0) {
+                try {
+                    trace('Text $oneSelected' + ' X: ' + textList[oneSelected].x + ' | Text $oneSelected' + ' Y: ' + textList[oneSelected].y + ' | Text $oneSelected Scale: ' + textList[oneSelected].size);
+                } catch(e:Dynamic) {
+                    trace(e + " (Tried to trace text that doesn't exist!");
+                }
             }
         }
     }
